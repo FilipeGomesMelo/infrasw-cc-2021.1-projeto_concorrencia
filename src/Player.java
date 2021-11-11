@@ -83,8 +83,6 @@ public class Player {
             public void mouseMoved(MouseEvent e) {}
         };
 
-
-
         this.playerWindow = new PlayerWindow(
                 buttonListenerPlayNow,
                 buttonListenerRemove,
