@@ -142,6 +142,7 @@ public class Player {
         this.playerWindow.updatePlayingSongInfo(this.Musicas.get(this.currentId)[0],
                 this.Musicas.get(this.currentId)[1],
                 this.Musicas.get(this.currentId)[2]);
+        this.isPlaying = true;
         this.playerWindow.updateMiniplayer(
                 this.isActive,
                 this.isPlaying,
@@ -153,7 +154,6 @@ public class Player {
                 );
         this.playerWindow.enableScrubberArea();
         this.start = Instant.now();
-        this.isPlaying = true;
         this.playerWindow.updatePlayPauseButton(this.isPlaying);
         this.lock.unlock();
     }
@@ -172,14 +172,7 @@ public class Player {
             String [] song = this.addSongWindow.getSong();
             this.Musicas.put(String.valueOf(this.idCounter), song);
             this.idCounter += 1;
-            String [][] newQueue = new String[this.Musicas.size()][7];
-            int count = 0;
-            for (Map.Entry<String, String[]> entry: this.Musicas.entrySet()) {
-                newQueue[count] = entry.getValue();
-                count += 1;
-            }
-            this.Queue = newQueue;
-            playerWindow.updateQueueList(this.Queue);
+            updateQueue();
             this.addSongWindow.interrupt();
             this.addSongWindow = null;
             this.lock.unlock();
@@ -202,6 +195,11 @@ public class Player {
         }
         this.Musicas.remove(String.valueOf(this.playerWindow.getSelectedSongID()));
         this.idCounter += 1;
+        updateQueue();
+        this.lock.unlock();
+    }
+
+    public void updateQueue() {
         String [][] newQueue = new String[this.Musicas.size()][7];
         int count = 0;
         for (Map.Entry<String, String[]> entry: this.Musicas.entrySet()) {
@@ -210,6 +208,5 @@ public class Player {
         }
         this.Queue = newQueue;
         playerWindow.updateQueueList(this.Queue);
-        this.lock.unlock();
     }
 }
