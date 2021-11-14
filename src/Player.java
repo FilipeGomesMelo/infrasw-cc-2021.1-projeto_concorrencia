@@ -7,6 +7,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
@@ -19,7 +20,7 @@ public class Player {
     private boolean isPlaying = false;
     private boolean isRepeat = false;
     private double currentTime = 0;
-    private String currentId = "-1";
+    private int currentId = -1;
     private int idCounter = 0;
     private Instant start;
     private Instant stop;
@@ -28,7 +29,7 @@ public class Player {
 
     private final Lock lock = new ReentrantLock();
 
-    private Map<String, String[]> Musicas = new LinkedHashMap<String, String[]>();
+    private ArrayList<String[]> Musicas = new ArrayList<String[]>();
 
     String [][] Queue = {};
 
@@ -100,7 +101,7 @@ public class Player {
                 buttonListenerRepeat,
                 scrubberListenerClick,
                 scrubberListenerMotion,
-                "Tittle",
+                "Spotofi",
                 this.Queue
         );
 
@@ -126,7 +127,7 @@ public class Player {
                             this.isRepeat,
                             (int) this.currentTime,
                             Integer.parseInt(this.Musicas.get(this.currentId)[5]),
-                            Integer.parseInt(this.currentId),
+                            this.currentId,
                             this.Queue.length
                     );
                 }
@@ -137,7 +138,7 @@ public class Player {
 
     public void start() {
         this.lock.lock();
-        this.currentId = String.valueOf(this.playerWindow.getSelectedSongID());
+        this.currentId = getIdxFromId(String.valueOf(this.playerWindow.getSelectedSongID()));
         this.currentTime = 0;
         this.playerWindow.updatePlayingSongInfo(this.Musicas.get(this.currentId)[0],
                 this.Musicas.get(this.currentId)[1],
@@ -149,7 +150,7 @@ public class Player {
                 this.isRepeat,
                 (int) this.currentTime,
                 Integer.parseInt(this.Musicas.get(this.currentId)[5]),
-                Integer.parseInt(this.currentId),
+                this.currentId,
                 this.Queue.length
                 );
         this.playerWindow.enableScrubberArea();
@@ -170,7 +171,7 @@ public class Player {
         ActionListener buttonListenerAddSongOK = a -> {
             this.lock.lock();
             String [] song = this.addSongWindow.getSong();
-            this.Musicas.put(String.valueOf(this.idCounter), song);
+            this.Musicas.add(song);
             this.idCounter += 1;
             updateQueue();
             this.addSongWindow.interrupt();
@@ -188,25 +189,37 @@ public class Player {
 
     public void removeSong() {
         this.lock.lock();
-        if (String.valueOf(this.playerWindow.getSelectedSongID()).equals(this.currentId)){
+        int removedIdx = getIdxFromId(String.valueOf(this.playerWindow.getSelectedSongID()));
+        if (removedIdx == this.currentId){
             this.playerWindow.resetMiniPlayer();
             this.currentTime = 0;
             this.isPlaying = false;
+        } else if (removedIdx < this.currentId) {
+            this.currentId -= 1;
         }
-        this.Musicas.remove(String.valueOf(this.playerWindow.getSelectedSongID()));
-        this.idCounter += 1;
+        this.Musicas.remove(removedIdx);
         updateQueue();
         this.lock.unlock();
     }
 
     public void updateQueue() {
         String [][] newQueue = new String[this.Musicas.size()][7];
-        int count = 0;
-        for (Map.Entry<String, String[]> entry: this.Musicas.entrySet()) {
-            newQueue[count] = entry.getValue();
-            count += 1;
+
+        for (int i = 0; i < this.Musicas.size(); i++) {
+            newQueue[i] = this.Musicas.get(i);
         }
         this.Queue = newQueue;
         playerWindow.updateQueueList(this.Queue);
+    }
+
+    public int getIdxFromId(String Id) {
+        int result = -1;
+        for (int i = 0; i < this.Musicas.size(); i++) {
+            if (this.Musicas.get(i)[6].equals(Id)) {
+                result = i;
+                break;
+            }
+        }
+        return result;
     }
 }
