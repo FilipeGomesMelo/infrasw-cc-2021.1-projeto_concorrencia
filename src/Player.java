@@ -1,6 +1,7 @@
 import ui.AddSongWindow;
 import ui.PlayerWindow;
 
+import java.io.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.awt.event.ActionListener;
@@ -8,8 +9,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -106,6 +106,25 @@ public class Player {
         );
 
         playerWindow.start();
+
+        try {
+            BufferedReader csvReader = new BufferedReader(new FileReader("musicas.csv"));
+            String row;
+            while ((row = csvReader.readLine()) != null) {
+                String[] data = row.split(",");
+                Musicas.add(data);
+                if (Integer.parseInt(data[6]) >= this.idCounter) {
+                    this.idCounter = Integer.parseInt(data[6])+1;
+                }
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println(e);
+        } catch (IOException f) {
+            System.out.println(f);
+        } finally {
+            updateQueue();
+        }
+
         this.start = Instant.now();
         while (true) {
             this.stop = Instant.now();
@@ -176,6 +195,11 @@ public class Player {
             updateQueue();
             this.addSongWindow.interrupt();
             this.addSongWindow = null;
+            try {
+                saveMusicas();
+            } catch (IOException e) {
+                System.out.println(e);
+            }
             this.lock.unlock();
         };
         this.lock.lock();
@@ -199,16 +223,16 @@ public class Player {
         }
         this.Musicas.remove(removedIdx);
         updateQueue();
+        try {
+            saveMusicas();
+        } catch (IOException e) {
+            System.out.println(e);
+        }
         this.lock.unlock();
     }
 
     public void updateQueue() {
-        String [][] newQueue = new String[this.Musicas.size()][7];
-
-        for (int i = 0; i < this.Musicas.size(); i++) {
-            newQueue[i] = this.Musicas.get(i);
-        }
-        this.Queue = newQueue;
+        this.Queue = this.Musicas.toArray(new String[this.Musicas.size()][7]);
         playerWindow.updateQueueList(this.Queue);
     }
 
@@ -221,5 +245,18 @@ public class Player {
             }
         }
         return result;
+    }
+
+    public void saveMusicas() throws IOException{
+        File file = new File("musicas.csv");
+        FileWriter fw = new FileWriter(file);
+        BufferedWriter bw = new BufferedWriter(fw);
+        for (int i = 0; i < this.Musicas.size(); i++) {
+            String newLine = String.join(",", this.Musicas.get(i));
+            bw.write(newLine);
+            bw.newLine();
+        }
+        bw.close();
+        fw.close();
     }
 }
