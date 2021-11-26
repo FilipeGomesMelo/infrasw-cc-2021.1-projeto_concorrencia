@@ -14,9 +14,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Player {
-
+    // declaração de variáveis e atributos iniciais
     private PlayerWindow playerWindow;
-    private  boolean isActive = true;
+    private boolean isActive = true;
     private boolean isPlaying = false;
     private boolean isRepeat = false;
     private double currentTime = 0;
@@ -29,11 +29,15 @@ public class Player {
 
     private final Lock lock = new ReentrantLock();
 
+    // declaração da estrutura de dados utilizada para armazenar as músicas
+    // adicionadas
     private ArrayList<String[]> Musicas = new ArrayList<String[]>();
 
-    String [][] Queue = {};
+    String[][] Queue = {};
 
     public Player() {
+        // features implementadas até agora: Play, Pause, Adicionar música e Remover
+        // música
         ActionListener buttonListenerPlayNow = e -> start();
 
         ActionListener buttonListenerRemove = e -> removeSong();
@@ -70,13 +74,16 @@ public class Player {
             }
 
             @Override
-            public void mouseReleased(MouseEvent e) {}
+            public void mouseReleased(MouseEvent e) {
+            }
 
             @Override
-            public void mouseEntered(MouseEvent e) {}
+            public void mouseEntered(MouseEvent e) {
+            }
 
             @Override
-            public void mouseExited(MouseEvent e) {}
+            public void mouseExited(MouseEvent e) {
+            }
         };
 
         MouseMotionListener scrubberListenerMotion = new MouseMotionListener() {
@@ -86,26 +93,14 @@ public class Player {
             }
 
             @Override
-            public void mouseMoved(MouseEvent e) {}
+            public void mouseMoved(MouseEvent e) {
+            }
         };
 
-        this.playerWindow = new PlayerWindow(
-                buttonListenerPlayNow,
-                buttonListenerRemove,
-                buttonListenerAddSong,
-                buttonListenerPlayPause,
-                buttonListenerStop,
-                buttonListenerNext,
-                buttonListenerPrevious,
-                buttonListenerShuffle,
-                buttonListenerRepeat,
-                scrubberListenerClick,
-                scrubberListenerMotion,
-                "Spotofi",
-                this.Queue
-        );
-
-        playerWindow.start();
+        this.playerWindow = new PlayerWindow(buttonListenerPlayNow, buttonListenerRemove, buttonListenerAddSong,
+                buttonListenerPlayPause, buttonListenerStop, buttonListenerNext, buttonListenerPrevious,
+                buttonListenerShuffle, buttonListenerRepeat, scrubberListenerClick, scrubberListenerMotion, "Spotofi",
+                this.Queue);
 
         try {
             BufferedReader csvReader = new BufferedReader(new FileReader("musicas.csv"));
@@ -114,7 +109,7 @@ public class Player {
                 String[] data = row.split(",");
                 Musicas.add(data);
                 if (Integer.parseInt(data[6]) >= this.idCounter) {
-                    this.idCounter = Integer.parseInt(data[6])+1;
+                    this.idCounter = Integer.parseInt(data[6]) + 1;
                 }
             }
         } catch (FileNotFoundException e) {
@@ -125,118 +120,118 @@ public class Player {
             updateQueue();
         }
 
-        this.start = Instant.now();
-        while (true) {
+        // funcionamento geral do player
+        playerWindow.start(); // inicia a thread
+        this.start = Instant.now(); // marca o instante de início da música, do qual contaremos sua duração
+        while (true) { // loop de reprodução da música
             this.stop = Instant.now();
-            Duration dt = Duration.between(this.start, this.stop);
-            if (dt.getSeconds() >= 1) {
+            Duration dt = Duration.between(this.start, this.stop); // verificamos o intervalo entre o momento atual e o
+                                                                   // último verificado
+            if (dt.getSeconds() >= 1) { // a cada um segundo, a interface avança a reprodução
                 this.start = Instant.now();
-                this.lock.lock();
-                if (this.isPlaying) {
-                    if (this.currentTime >= Integer.parseInt(this.Musicas.get(this.currentId)[5])) {
+                this.lock.lock(); // damos lock para poder alterar valores de atributos do player
+                if (this.isPlaying) { // caso a música esteja tocando, atualizamos o valor do tempo atual na interface
+                    if (this.currentTime >= Integer.parseInt(this.Musicas.get(this.currentId)[5])) { // condição de
+                                                                                                     // término da
+                                                                                                     // música, scrubber
+                                                                                                     // volta pro início
                         this.isPlaying = false;
                         this.currentTime -= 1;
                     }
                     this.currentTime += 1;
                     this.stop = Instant.now();
 
-                    this.playerWindow.updateMiniplayer(
-                            this.isActive,
-                            this.isPlaying,
-                            this.isRepeat,
-                            (int) this.currentTime,
-                            Integer.parseInt(this.Musicas.get(this.currentId)[5]),
-                            this.currentId,
-                            this.Queue.length
-                    );
+                    this.playerWindow.updateMiniplayer( // atualização dos parâmetros
+                            this.isActive, this.isPlaying, this.isRepeat, (int) this.currentTime,
+                            Integer.parseInt(this.Musicas.get(this.currentId)[5]), this.currentId, this.Queue.length);
                 }
-                this.lock.unlock();
+                this.lock.unlock(); // unlock após as alterações para liberar a zona crítica
             }
         }
     }
 
-    public void start() {
-        this.lock.lock();
+    public void start() { // configurações para começar a tocar uma música
+        this.lock.lock(); // damos lock para poder alterar valores de atributos do player
         this.currentId = getIdxFromId(String.valueOf(this.playerWindow.getSelectedSongID()));
         this.currentTime = 0;
-        this.playerWindow.updatePlayingSongInfo(this.Musicas.get(this.currentId)[0],
-                this.Musicas.get(this.currentId)[1],
-                this.Musicas.get(this.currentId)[2]);
+        this.playerWindow.updatePlayingSongInfo(this.Musicas.get(this.currentId)[0], // configuração da interface para
+                                                                                     // mostrar a música tocada
+                this.Musicas.get(this.currentId)[1], this.Musicas.get(this.currentId)[2]);
         this.isPlaying = true;
-        this.playerWindow.updateMiniplayer(
-                this.isActive,
-                this.isPlaying,
-                this.isRepeat,
-                (int) this.currentTime,
-                Integer.parseInt(this.Musicas.get(this.currentId)[5]),
-                this.currentId,
-                this.Queue.length
-                );
+        this.playerWindow.updateMiniplayer( // inicialização de parâmetros para indicar que a música está tocando
+                this.isActive, this.isPlaying, this.isRepeat, (int) this.currentTime,
+                Integer.parseInt(this.Musicas.get(this.currentId)[5]), this.currentId, this.Queue.length);
         this.playerWindow.enableScrubberArea();
         this.start = Instant.now();
         this.playerWindow.updatePlayPauseButton(this.isPlaying);
-        this.lock.unlock();
+        this.lock.unlock(); // unlock após as alterações para liberar a zona crítica
     }
 
     public void playPause() {
-        this.lock.lock();
-        this.isPlaying = !this.isPlaying;
+        this.lock.lock(); // damos lock para poder alterar valores de atributos do player
+        this.isPlaying = !this.isPlaying; // sempre inverteremos o status da música de play para pause ou de pause para
+                                          // play quando o botão for apertado
         this.start = Instant.now();
-        this.playerWindow.updatePlayPauseButton(this.isPlaying);
-        this.lock.unlock();
+        this.playerWindow.updatePlayPauseButton(this.isPlaying); // atualizamos a interface
+        this.lock.unlock(); // unlock após as alterações para liberar a zona crítica
     }
 
     public void addSong() {
         ActionListener buttonListenerAddSongOK = a -> {
-            this.lock.lock();
-            String [] song = this.addSongWindow.getSong();
-            this.Musicas.add(song);
-            this.idCounter += 1;
-            updateQueue();
-            this.addSongWindow.interrupt();
+            this.lock.lock(); // damos lock para poder alterar valores de atributos do player
+            String[] song = this.addSongWindow.getSong(); // pegamos as informações da música pela janela AddSong
+            this.Musicas.add(song); // adicionamos na nossa estrutura
+            this.idCounter += 1; // atualizamos o ID para que se mantenha sempre diferente para cada música
+            updateQueue(); // atualizamos a fila de músicas
+            this.addSongWindow.interrupt(); // finalizamos a thread de adicionar música, pois terminamos de usar suas
+                                            // funcionalidades
             this.addSongWindow = null;
             try {
                 saveMusicas();
             } catch (IOException e) {
                 System.out.println(e);
             }
-            this.lock.unlock();
+            this.lock.unlock(); // unlock após as alterações para liberar a zona crítica
         };
-        this.lock.lock();
-        this.addSongWindow = new AddSongWindow(String.valueOf(this.idCounter),
-                buttonListenerAddSongOK,
-                this.playerWindow.getAddSongWindowListener());
+        this.lock.lock(); // damos lock para poder alterar valores de atributos do player
+        this.addSongWindow = new AddSongWindow(String.valueOf(this.idCounter), // Inicializando os parâmetros do AddSong
+                                                                               // Window
+                buttonListenerAddSongOK, this.playerWindow.getAddSongWindowListener());
 
-        addSongWindow.start();
-        this.lock.unlock();
+        addSongWindow.start(); // Iniciando a thread do AddSong Window
+        this.lock.unlock(); // unlock após as alterações para liberar a zona crítica
     }
 
     public void removeSong() {
-        this.lock.lock();
-        int removedIdx = getIdxFromId(String.valueOf(this.playerWindow.getSelectedSongID()));
-        if (removedIdx == this.currentId){
-            this.playerWindow.resetMiniPlayer();
+        this.lock.lock(); // damos lock para poder alterar valores de atributos do player
+        int removedIdx = getIdxFromId(String.valueOf(this.playerWindow.getSelectedSongID())); // pegamos o index da
+                                                                                              // música que deve ser
+                                                                                              // removida da fila
+        if (removedIdx == this.currentId) { // caso se deseje remover a música atual
+            this.playerWindow.resetMiniPlayer(); // resetamos o miniplayer e os atributos do player
             this.currentTime = 0;
             this.isPlaying = false;
-        } else if (removedIdx < this.currentId) {
+        } else if (removedIdx < this.currentId) { // caso seja outra música, devemos alterar o ID da atual, por conta da
+                                                  // posição na fila
             this.currentId -= 1;
         }
-        this.Musicas.remove(removedIdx);
-        updateQueue();
+        this.Musicas.remove(removedIdx); // removemos a música da estrutura de dados
+        updateQueue(); // atualizamos a fila mostrada no player
         try {
             saveMusicas();
         } catch (IOException e) {
             System.out.println(e);
         }
-        this.lock.unlock();
+        this.lock.unlock(); // unlock após as alterações para liberar a zona crítica
     }
 
-    public void updateQueue() {
+    public void updateQueue() { // passamos as músicas da nossa estrutura para a fila sempre que atualizamos
+                                // alguma informação
         this.Queue = this.Musicas.toArray(new String[this.Musicas.size()][7]);
         playerWindow.updateQueueList(this.Queue);
     }
 
-    public int getIdxFromId(String Id) {
+    public int getIdxFromId(String Id) { // retorna o index da música na nossa estrutura para o dado ID
         int result = -1;
         for (int i = 0; i < this.Musicas.size(); i++) {
             if (this.Musicas.get(i)[6].equals(Id)) {
@@ -247,7 +242,7 @@ public class Player {
         return result;
     }
 
-    public void saveMusicas() throws IOException{
+    public void saveMusicas() throws IOException {
         File file = new File("musicas.csv");
         FileWriter fw = new FileWriter(file);
         BufferedWriter bw = new BufferedWriter(fw);
