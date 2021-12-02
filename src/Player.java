@@ -64,6 +64,7 @@ public class Player {
         MouseListener scrubberListenerClick = new MouseListener() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                lock.lock();
                 System.out.println("mouseClicked");
             }
 
@@ -209,7 +210,7 @@ public class Player {
             } finally {
                 this.lock.unlock(); // unlock após as alterações para liberar a zona crítica
             }
-        }
+        };
         try {
             this.lock.lock(); // damos lock para poder alterar valores de atributos do player
             this.addSongWindow = new AddSongWindow(String.valueOf(this.idCounter), // Inicializando os parâmetros do AddSong
@@ -279,6 +280,7 @@ public class Player {
     }
 
     public boolean playNext() {
+        boolean deu_certo = false;
         try {
             lock.lock();
             if (this.currentId < this.Musicas.size() - 1) {
@@ -293,13 +295,12 @@ public class Player {
                         (int) this.currentTime, Integer.parseInt(this.Musicas.get(this.currentId)[5]),
                         this.currentId, this.Queue.length);
 
-                lock.unlock();
-                return true;
+                deu_certo = true;
             }
         } finally {
             lock.unlock();
+            return deu_certo;
         }
-        return false;
     }
 
     public void playPrevious() {
