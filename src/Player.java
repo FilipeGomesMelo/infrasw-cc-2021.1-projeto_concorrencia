@@ -128,35 +128,39 @@ public class Player {
                                                                    // último verificado
             if (dt.getSeconds() >= 1) { // a cada um segundo, a interface avança a reprodução
                 this.start = Instant.now();
-                this.lock.lock(); // damos lock para poder alterar valores de atributos do player
-                if (this.isPlaying) { // caso a música esteja tocando, atualizamos o valor do tempo atual na interface
-                    this.currentTime += 1;
-                    this.stop = Instant.now();
+                try {
+                    this.lock.lock(); // damos lock para poder alterar valores de atributos do player
+                    if (this.isPlaying) { // caso a música esteja tocando, atualizamos o valor do tempo atual na interface
+                        this.currentTime += 1;
+                        this.stop = Instant.now();
 
-                    this.playerWindow.updateMiniplayer( // atualização dos parâmetros
-                            this.isActive, this.isPlaying, this.isRepeat, (int) this.currentTime,
-                            Integer.parseInt(this.Musicas.get(this.currentId)[5]), this.currentId, this.Queue.length);
+                        this.playerWindow.updateMiniplayer( // atualização dos parâmetros
+                                this.isActive, this.isPlaying, this.isRepeat, (int) this.currentTime,
+                                Integer.parseInt(this.Musicas.get(this.currentId)[5]), this.currentId, this.Queue.length);
 
-                    if (this.currentTime >= Integer.parseInt(this.Musicas.get(this.currentId)[5])) { // condição de
-                        // término da
-                        // música, scrubber
-                        // volta pro início
-                        if (!playNext()) {
-                            this.isPlaying = false;
-                            this.currentId = -1;
-                            this.playerWindow.resetMiniPlayer(); // resetamos o miniplayer e os atributos do player
-                            this.currentTime = 0;
-                            this.isPlaying = false;
+                        if (this.currentTime >= Integer.parseInt(this.Musicas.get(this.currentId)[5])) { // condição de
+                            // término da
+                            // música, scrubber
+                            // volta pro início
+                            if (!playNext()) {
+                                this.isPlaying = false;
+                                this.currentId = -1;
+                                this.playerWindow.resetMiniPlayer(); // resetamos o miniplayer e os atributos do player
+                                this.currentTime = 0;
+                                this.isPlaying = false;
+                            }
                         }
                     }
+                } finally {
+                    this.lock.unlock();
                 }
             }
         }
     }
 
     public void start() { // configurações para começar a tocar uma música
-        this.lock.lock(); // damos lock para poder alterar valores de atributos do player
         try {
+            this.lock.lock(); // damos lock para poder alterar valores de atributos do player
             this.currentId = getIdxFromId(String.valueOf(this.playerWindow.getSelectedSongID()));
             this.currentTime = 0;
             this.playerWindow.updatePlayingSongInfo(this.Musicas.get(this.currentId)[0], // configuração da interface para
@@ -175,8 +179,8 @@ public class Player {
     }
 
     public void playPause() {
-        this.lock.lock(); // damos lock para poder alterar valores de atributos do player
         try {
+            this.lock.lock(); // damos lock para poder alterar valores de atributos do player
             this.isPlaying = !this.isPlaying; // sempre inverteremos o status da música de play para pause ou de pause para
             // play quando o botão for apertado
             this.start = Instant.now();
@@ -188,8 +192,8 @@ public class Player {
 
     public void addSong() {
         ActionListener buttonListenerAddSongOK = a -> {
-            this.lock.lock(); // damos lock para poder alterar valores de atributos do player
             try {
+                this.lock.lock(); // damos lock para poder alterar valores de atributos do player
                 String[] song = this.addSongWindow.getSong(); // pegamos as informações da música pela janela AddSong
                 this.Musicas.add(song); // adicionamos na nossa estrutura
                 this.idCounter += 1; // atualizamos o ID para que se mantenha sempre diferente para cada música
@@ -205,9 +209,9 @@ public class Player {
             } finally {
                 this.lock.unlock(); // unlock após as alterações para liberar a zona crítica
             }
-        };
-        this.lock.lock(); // damos lock para poder alterar valores de atributos do player
+        }
         try {
+            this.lock.lock(); // damos lock para poder alterar valores de atributos do player
             this.addSongWindow = new AddSongWindow(String.valueOf(this.idCounter), // Inicializando os parâmetros do AddSong
                     // Window
                     buttonListenerAddSongOK, this.playerWindow.getAddSongWindowListener());
@@ -219,8 +223,8 @@ public class Player {
     }
 
     public void removeSong() {
-        this.lock.lock(); // damos lock para poder alterar valores de atributos do player
         try {
+            this.lock.lock(); // damos lock para poder alterar valores de atributos do player
             int removedIdx = getIdxFromId(String.valueOf(this.playerWindow.getSelectedSongID())); // pegamos o index da
             // música que deve ser
             // removida da fila
@@ -275,40 +279,46 @@ public class Player {
     }
 
     public boolean playNext() {
-        lock.lock();
-        if (this.currentId < this.Musicas.size()-1) {
-            this.currentId += 1;
-            this.currentTime = 0;
-            this.start = Instant.now();
+        try {
+            lock.lock();
+            if (this.currentId < this.Musicas.size() - 1) {
+                this.currentId += 1;
+                this.currentTime = 0;
+                this.start = Instant.now();
 
-            this.playerWindow.updatePlayingSongInfo(this.Musicas.get(this.currentId)[0],
-                    this.Musicas.get(this.currentId)[1], this.Musicas.get(this.currentId)[2]);
+                this.playerWindow.updatePlayingSongInfo(this.Musicas.get(this.currentId)[0],
+                        this.Musicas.get(this.currentId)[1], this.Musicas.get(this.currentId)[2]);
 
-            this.playerWindow.updateMiniplayer(this.isActive, this.isPlaying, this.isRepeat,
-                    (int) this.currentTime, Integer.parseInt(this.Musicas.get(this.currentId)[5]),
-                    this.currentId, this.Queue.length);
+                this.playerWindow.updateMiniplayer(this.isActive, this.isPlaying, this.isRepeat,
+                        (int) this.currentTime, Integer.parseInt(this.Musicas.get(this.currentId)[5]),
+                        this.currentId, this.Queue.length);
 
+                lock.unlock();
+                return true;
+            }
+        } finally {
             lock.unlock();
-            return true;
         }
-        lock.unlock();
         return false;
     }
 
     public void playPrevious() {
-        lock.lock();
-        if (this.currentId > 0){
-            this.currentId -= 1;
-            this.currentTime = 0;
-            this.start = Instant.now();
+        try {
+            lock.lock();
+            if (this.currentId > 0) {
+                this.currentId -= 1;
+                this.currentTime = 0;
+                this.start = Instant.now();
 
-            this.playerWindow.updatePlayingSongInfo(this.Musicas.get(this.currentId)[0],
-                    this.Musicas.get(this.currentId)[1], this.Musicas.get(this.currentId)[2]);
+                this.playerWindow.updatePlayingSongInfo(this.Musicas.get(this.currentId)[0],
+                        this.Musicas.get(this.currentId)[1], this.Musicas.get(this.currentId)[2]);
 
-            this.playerWindow.updateMiniplayer(this.isActive, this.isPlaying, this.isRepeat,
-                    (int) this.currentTime, Integer.parseInt(this.Musicas.get(this.currentId)[5]),
-                    this.currentId, this.Queue.length);
+                this.playerWindow.updateMiniplayer(this.isActive, this.isPlaying, this.isRepeat,
+                        (int) this.currentTime, Integer.parseInt(this.Musicas.get(this.currentId)[5]),
+                        this.currentId, this.Queue.length);
+            }
+        } finally {
+            lock.unlock();
         }
-        lock.unlock();
     }
 }
