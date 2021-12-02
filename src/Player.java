@@ -64,8 +64,7 @@ public class Player {
         MouseListener scrubberListenerClick = new MouseListener() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                lock.lock();
-                System.out.println("mouseClicked");
+                clickedMouse();
             }
 
             @Override
@@ -318,6 +317,19 @@ public class Player {
                         (int) this.currentTime, Integer.parseInt(this.Musicas.get(this.currentId)[5]),
                         this.currentId, this.Queue.length);
             }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void clickedMouse() {
+        System.out.println("mouseClicked");
+        try {
+            lock.lock();
+            currentTime = playerWindow.getScrubberValue();
+            this.playerWindow.updateMiniplayer( // atualização dos parâmetros
+                    this.isActive, this.isPlaying, this.isRepeat, (int) this.currentTime,
+                    Integer.parseInt(this.Musicas.get(this.currentId)[5]), this.currentId, this.Queue.length);
         } finally {
             lock.unlock();
         }
