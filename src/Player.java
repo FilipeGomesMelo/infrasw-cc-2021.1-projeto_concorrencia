@@ -36,8 +36,8 @@ public class Player {
     String[][] Queue = {};
 
     public Player() {
-        // features implementadas até agora: Play, Pause, Adicionar música e Remover
-        // música
+        // features implementadas até agora: Play, Pause, Adicionar música, Remover, Avançar música, Voltar
+        // música e alterar progresso pelo slider
         ActionListener buttonListenerPlayNow = e -> start();
 
         ActionListener buttonListenerRemove = e -> removeSong();
@@ -304,7 +304,7 @@ public class Player {
         return result;
     }
 
-    public void saveMusicas() throws IOException {
+    public void saveMusicas() throws IOException { //fizemos um arquivo .csv para termos várias músicas para testar
         File file = new File("musicas.csv");
         FileWriter fw = new FileWriter(file);
         BufferedWriter bw = new BufferedWriter(fw);
@@ -317,10 +317,10 @@ public class Player {
         fw.close();
     }
 
-    public boolean playNext() {
+    public boolean playNext() { // função que toca a próxima música na ordem em que estão dispostas
         boolean deu_certo = false;
         try {
-            lock.lock();
+            lock.lock(); // damos lock para poder alterar valores de atributos do player
             if (this.currentId < this.Musicas.size() - 1) {
                 this.currentId += 1;
                 this.currentTime = 0;
@@ -336,17 +336,17 @@ public class Player {
                 deu_certo = true;
             }
         } finally {
-            lock.unlock();
+            lock.unlock();  // unlock após as alterações para liberar a zona crítica
             return deu_certo;
         }
     }
 
-    public void playPrevious() {
+    public void playPrevious() { //função para tocar a música anterior
         Thread t_playPrevious = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    lock.lock();
+                    lock.lock(); // damos lock para poder alterar valores de atributos do player
                     if (currentId > 0) {
                         currentId -= 1;
                         currentTime = 0;
@@ -360,21 +360,21 @@ public class Player {
                                 currentId, Queue.length);
                     }
                 } finally {
-                    lock.unlock();
+                    lock.unlock();  // unlock após as alterações para liberar a zona crítica
                 }
             }
         });
 
-        t_playPrevious.start();
+        t_playPrevious.start(); //iniciamos a thread
     }
 
-    public void pressedMouse() {
-        System.out.println("mousePressed");
+    public void pressedMouse() { //Funções relativas ao scrubber e a movimentação com mouse
+        System.out.println("mousePressed"); //print para ajudar nos testes
         Thread t_pressedMouse= new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    lock.lock();
+                    lock.lock(); // damos lock para poder alterar valores de atributos do player
                     isPlaying = false;
                     currentTime = playerWindow.getScrubberValue();
                     playerWindow.updateMiniplayer( // atualização dos parâmetros
@@ -384,21 +384,21 @@ public class Player {
                     // Quando o scrubber está desativado e a pessoa tenta mexer, nada acontece
                     currentTime = 0;
                 } finally {
-                    lock.unlock();
+                    lock.unlock(); // unlock após as alterações para liberar a zona crítica
                 }
             }
         });
 
-        t_pressedMouse.start();
+        t_pressedMouse.start(); //iniciamos a thread
     }
 
-    public void releaseMouse() {
+    public void releaseMouse() { //Funções relativas ao scrubber e a movimentação com mouse
         System.out.println("mouseReleased");
         Thread t_releaseMouse = new Thread(new Runnable() {
             @Override
             public void run() {
                 try{
-                    lock.lock();
+                    lock.lock(); // damos lock para poder alterar valores de atributos do player
                     currentTime = playerWindow.getScrubberValue();
                     isPlaying = true;
                     start = Instant.now();
@@ -410,21 +410,21 @@ public class Player {
                     currentTime = 0;
                     isPlaying = false;
                 } finally {
-                    lock.unlock();
+                    lock.unlock(); // unlock após as alterações para liberar a zona crítica
                 }
             }
         });
 
-        t_releaseMouse.start();
+        t_releaseMouse.start(); //iniciamos a thread
     }
 
-    public void draggedMouse() {
+    public void draggedMouse() { //Funções relativas ao scrubber e a movimentação com mouse
         System.out.println("mouseDragged");
         Thread t_draggedMouse = new Thread(new Runnable() {
             @Override
             public void run() {
                 try{
-                    lock.lock();
+                    lock.lock(); // damos lock para poder alterar valores de atributos do player
                     currentTime = playerWindow.getScrubberValue();
                     playerWindow.updateMiniplayer( // atualização dos parâmetros
                             isActive, isPlaying, isRepeat, (int) currentTime,
@@ -434,11 +434,11 @@ public class Player {
                     currentTime = 0;
                 }
                 finally {
-                    lock.unlock();
+                    lock.unlock(); // unlock após as alterações para liberar a zona crítica
                 }
             }
         });
 
-        t_draggedMouse.start();
+        t_draggedMouse.start(); //iniciamos a thread
     }
 }
