@@ -36,8 +36,8 @@ public class Player {
     String[][] Queue = {};
 
     public Player() {
-        // features implementadas até agora: Play, Pause, Adicionar música, Remover, Avançar música, Voltar
-        // música e alterar progresso pelo slider
+        // features implementadas até agora: Play, Pause, Stop, Adicionar música, Remover, Avançar música, Voltar
+        // música e alterar progresso pelo slider, repeat e modo aleatório
         ActionListener buttonListenerPlayNow = e -> start();
 
         ActionListener buttonListenerRemove = e -> removeSong();
@@ -46,20 +46,16 @@ public class Player {
 
         ActionListener buttonListenerPlayPause = e -> playPause();
 
-        ActionListener buttonListenerStop = e -> {
-            System.out.println("buttonListenerStop");
-        };
+        ActionListener buttonListenerStop = e -> playStop();
 
         ActionListener buttonListenerNext = e -> playNext();
 
         ActionListener buttonListenerPrevious = e -> playPrevious();
 
-        ActionListener buttonListenerShuffle = e -> {
-            System.out.println("buttonListenerShuffle");
-        };
-        ActionListener buttonListenerRepeat = e -> {
-            System.out.println("buttonListenerRepeat");
-        };
+        ActionListener buttonListenerShuffle = e -> playShuffle();
+
+        ActionListener buttonListenerRepeat = e -> playRepeat();
+
 
         MouseListener scrubberListenerClick = new MouseListener() {
             @Override
@@ -145,12 +141,16 @@ public class Player {
                             // término da
                             // música, scrubber
                             // volta pro início
-                            if (!playNext()) {
-                                this.isPlaying = false;
-                                this.currentId = -1;
-                                this.playerWindow.resetMiniPlayer(); // resetamos o miniplayer e os atributos do player
-                                this.currentTime = 0;
-                                this.isPlaying = false;
+                            if (isRepeat){
+                                currentTime = 0;
+                            } else {
+                                if (!playNext()) {
+                                    this.isPlaying = false;
+                                    this.currentId = -1;
+                                    this.playerWindow.resetMiniPlayer(); // resetamos o miniplayer e os atributos do player
+                                    this.currentTime = 0;
+                                    this.isPlaying = false;
+                                }
                             }
                         }
                     }
@@ -318,7 +318,7 @@ public class Player {
     }
 
     public boolean playNext() { // função que toca a próxima música na ordem em que estão dispostas
-        boolean deu_certo = false;
+        boolean isNext = false;
         try {
             lock.lock(); // damos lock para poder alterar valores de atributos do player
             if (this.currentId < this.Musicas.size() - 1) {
@@ -333,11 +333,11 @@ public class Player {
                         (int) this.currentTime, Integer.parseInt(this.Musicas.get(this.currentId)[5]),
                         this.currentId, this.Queue.length);
 
-                deu_certo = true;
+                isNext = true;
             }
         } finally {
             lock.unlock();  // unlock após as alterações para liberar a zona crítica
-            return deu_certo;
+            return isNext;
         }
     }
 
@@ -440,5 +440,53 @@ public class Player {
         });
 
         t_draggedMouse.start(); //iniciamos a thread
+    }
+
+    public void playStop() {
+        Thread t_playStop = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    lock.lock(); // damos lock para poder alterar valores de atributos do player
+                    playerWindow.resetMiniPlayer();
+                    isPlaying = false;
+                    currentId = -1;
+                    currentTime = 0;
+                } finally {
+                    lock.unlock();  // unlock após as alterações para liberar a zona crítica
+                }
+            }
+        });
+        t_playStop.start(); //iniciamos a thread
+    }
+    public void playRepeat() {
+        Thread t_playRepeat = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    lock.lock(); // damos lock para poder alterar valores de atributos do player
+                    isRepeat = !isRepeat
+                } finally {
+                    lock.unlock();  // unlock após as alterações para liberar a zona crítica
+                }
+            }
+        });
+        t_playRepeat.start(); //iniciamos a thread
+    }
+    public void playShuffle() {
+        Thread t_playShuffle = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    lock.lock(); // damos lock para poder alterar valores de atributos do player
+                    java.util.Collections.shuffle(Musicas);
+                    updateQueue();
+                    //getIdxFromId(currentId);
+                } finally {
+                    lock.unlock();  // unlock após as alterações para liberar a zona crítica
+                }
+            }
+        });
+        t_playShuffle.start(); //iniciamos a thread
     }
 }
