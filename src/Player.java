@@ -465,7 +465,7 @@ public class Player {
             public void run() {
                 try {
                     lock.lock(); // damos lock para poder alterar valores de atributos do player
-                    isRepeat = !isRepeat
+                    isRepeat = !isRepeat;
                 } finally {
                     lock.unlock();  // unlock após as alterações para liberar a zona crítica
                 }
