@@ -19,6 +19,7 @@ public class Player {
     private boolean isActive = true;
     private boolean isPlaying = false;
     private boolean isRepeat = false;
+    private boolean isShuffle = false;
     private double currentTime = 0;
     private int currentId = -1;
     private int idCounter = 0;
@@ -32,6 +33,7 @@ public class Player {
     // declaração da estrutura de dados utilizada para armazenar as músicas
     // adicionadas
     private ArrayList<String[]> Musicas = new ArrayList<String[]>();
+    private ArrayList<String[]> OriginalMusicas = new ArrayList<String[]>();
 
     String[][] Queue = {};
 
@@ -104,6 +106,7 @@ public class Player {
             while ((row = csvReader.readLine()) != null) {
                 String[] data = row.split(",");
                 Musicas.add(data);
+                OriginalMusicas.add(data);
                 if (Integer.parseInt(data[6]) >= this.idCounter) {
                     this.idCounter = Integer.parseInt(data[6]) + 1;
                 }
@@ -167,7 +170,7 @@ public class Player {
             public void run() {
                 try {
                     lock.lock(); // damos lock para poder alterar valores de atributos do player
-                    currentId = getIdxFromId(String.valueOf(playerWindow.getSelectedSongID()));
+                    currentId = getIdxFromId(String.valueOf(playerWindow.getSelectedSongID()), Musicas);
                     currentTime = 0;
                     playerWindow.updatePlayingSongInfo(Musicas.get(currentId)[0], // configuração da interface para
                             // mostrar a música tocada
@@ -219,6 +222,7 @@ public class Player {
                                 lock.lock(); // damos lock para poder alterar valores de atributos do player
                                 String[] song = addSongWindow.getSong(); // pegamos as informações da música pela janela AddSong
                                 Musicas.add(song); // adicionamos na nossa estrutura
+                                OriginalMusicas.add(song);
                                 idCounter += 1; // atualizamos o ID para que se mantenha sempre diferente para cada música
                                 updateQueue(); // atualizamos a fila de músicas
                                 addSongWindow.interrupt(); // finalizamos a thread de adicionar música, pois terminamos de usar suas
@@ -260,7 +264,8 @@ public class Player {
             public void run() {
                 try {
                     lock.lock(); // damos lock para poder alterar valores de atributos do player
-                    int removedIdx = getIdxFromId(String.valueOf(playerWindow.getSelectedSongID())); // pegamos o index da
+                    int removedIdx = getIdxFromId(String.valueOf(playerWindow.getSelectedSongID()), Musicas); // pegamos o index da
+                    int removedIdxOri = getIdxFromId(String.valueOf(playerWindow.getSelectedSongID()), OriginalMusicas); // pegamos o index da
                     // música que deve ser
                     // removida da fila
                     if (removedIdx == currentId) { // caso se deseje remover a música atual
@@ -272,6 +277,7 @@ public class Player {
                         currentId -= 1;
                     }
                     Musicas.remove(removedIdx); // removemos a música da estrutura de dados
+                    OriginalMusicas.remove(removedIdxOri);
                     updateQueue(); // atualizamos a fila mostrada no player
                     try {
                         saveMusicas();
@@ -293,10 +299,10 @@ public class Player {
         playerWindow.updateQueueList(this.Queue);
     }
 
-    public int getIdxFromId(String Id) { // retorna o index da música na nossa estrutura para o dado ID
+    public int getIdxFromId(String Id, ArrayList<String[]> arr) { // retorna o index da música na nossa estrutura para o dado ID
         int result = -1;
-        for (int i = 0; i < this.Musicas.size(); i++) {
-            if (this.Musicas.get(i)[6].equals(Id)) {
+        for (int i = 0; i < arr.size(); i++) {
+            if (arr.get(i)[6].equals(Id)) {
                 result = i;
                 break;
             }
@@ -308,8 +314,8 @@ public class Player {
         File file = new File("musicas.csv");
         FileWriter fw = new FileWriter(file);
         BufferedWriter bw = new BufferedWriter(fw);
-        for (int i = 0; i < this.Musicas.size(); i++) {
-            String newLine = String.join(",", this.Musicas.get(i));
+        for (int i = 0; i < this.OriginalMusicas.size(); i++) {
+            String newLine = String.join(",", this.OriginalMusicas.get(i));
             bw.write(newLine);
             bw.newLine();
         }
@@ -479,8 +485,30 @@ public class Player {
             public void run() {
                 try {
                     lock.lock(); // damos lock para poder alterar valores de atributos do player
-                    java.util.Collections.shuffle(Musicas);
+                    String originalId = "";
+                    if (currentId != -1) {
+                        originalId = Musicas.get(currentId)[6];
+                    }
+
+                    if (!isShuffle) {
+                        java.util.Collections.shuffle(Musicas);
+                    } else {
+                        Musicas = (ArrayList<String[]>) OriginalMusicas.clone();
+                    }
+                    System.out.println(originalId);
+                    System.out.println(Musicas.toString());
+                    System.out.println(OriginalMusicas.toString());
+                    currentId = getIdxFromId(originalId, Musicas);
+                    System.out.println(currentId);
                     updateQueue();
+                    if (currentId != -1) {
+                        playerWindow.updateMiniplayer( // atualização dos parâmetros
+                                isActive, isPlaying, isRepeat, (int) currentTime,
+                                Integer.parseInt(Musicas.get(currentId)[5]), currentId, Queue.length);
+                    }
+
+                    isShuffle = !isShuffle;
+
                     //getIdxFromId(currentId);
                 } finally {
                     lock.unlock();  // unlock após as alterações para liberar a zona crítica
