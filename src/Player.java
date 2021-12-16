@@ -495,11 +495,9 @@ public class Player {
                     } else {
                         Musicas = (ArrayList<String[]>) OriginalMusicas.clone();
                     }
-                    System.out.println(originalId);
-                    System.out.println(Musicas.toString());
-                    System.out.println(OriginalMusicas.toString());
+
                     currentId = getIdxFromId(originalId, Musicas);
-                    System.out.println(currentId);
+
                     updateQueue();
                     if (currentId != -1) {
                         playerWindow.updateMiniplayer( // atualização dos parâmetros
